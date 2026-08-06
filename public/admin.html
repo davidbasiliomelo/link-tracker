@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel de Administração</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <button id="theme-toggle" class="theme-toggle" title="Alternar tema" aria-label="Alternar tema claro/escuro">🌙</button>
+
+  <div class="container">
+    <h1>🔒 Painel de Administração</h1>
+
+    <div id="login-box">
+      <label for="password">Senha</label>
+      <input type="password" id="password" placeholder="Digite a senha de admin" />
+      <button id="login-btn">Entrar</button>
+      <p id="login-message"></p>
+    </div>
+
+    <div id="admin-panel" style="display:none;">
+      <button id="logout-btn">Sair</button>
+
+      <div class="filters">
+        <input type="text" id="search-input" placeholder="Buscar por nome..." />
+      </div>
+      <div class="period-tabs">
+        <button class="period-tab active" data-period="all">Total</button>
+        <button class="period-tab" data-period="month">Esse mês</button>
+        <button class="period-tab" data-period="week">Essa semana</button>
+      </div>
+      <p class="live-label"><span class="live-dot"></span> Atualizando ao vivo</p>
+
+      <div id="categories-container"></div>
+    </div>
+
+    <p class="admin-link"><a href="index.html">← Voltar para envio de links</a></p>
+  </div>
+
+  <footer class="credit">Feito por <strong>Basílio</strong></footer>
+
+  <script src="theme.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

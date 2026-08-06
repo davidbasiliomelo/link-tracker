@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Envie seu link</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <button id="theme-toggle" class="theme-toggle" title="Alternar tema" aria-label="Alternar tema claro/escuro">🌙</button>
+
+  <div class="container">
+    <h1>🎬 Envie seu vídeo/clipe</h1>
+    <p class="subtitle">Links repetidos não são aceitos duas vezes.</p>
+
+    <form id="submit-form">
+      <label for="name">Seu nome</label>
+      <input type="text" id="name" placeholder="Ex: Maria" required />
+
+      <label>Categoria</label>
+      <div class="category-toggle">
+        <label class="category-option">
+          <input type="radio" name="category" value="video" checked />
+          <span>🎥 Edit</span>
+        </label>
+        <label class="category-option">
+          <input type="radio" name="category" value="clipe" />
+          <span>✂️ Clipe</span>
+        </label>
+      </div>
+
+      <label for="url">Link do vídeo/clipe</label>
+      <input type="url" id="url" placeholder="https://..." required />
+
+      <button type="submit">Enviar link</button>
+    </form>
+
+    <p id="message"></p>
+  </div>
+
+  <footer class="credit">Feito por <strong>Basílio</strong></footer>
+
+  <canvas id="confetti-canvas"></canvas>
+
+  <script src="theme.js"></script>
+  <script src="confetti.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
