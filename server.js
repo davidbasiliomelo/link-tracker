@@ -66,6 +66,15 @@ app.post('/api/submit', (req, res) => {
   return res.json({ ok: true });
 });
 
+// Ranking público, só com nome e contagem (sem os links), por categoria
+app.get('/api/ranking', (req, res) => {
+  const ranking = {};
+  CATEGORIES.forEach((cat) => {
+    ranking[cat] = getRanking(cat);
+  });
+  res.json({ ok: true, ranking });
+});
+
 // ---------- Autenticação de admin ----------
 
 app.post('/api/admin/login', (req, res) => {

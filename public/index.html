@@ -21,7 +21,7 @@
       <div class="category-toggle">
         <label class="category-option">
           <input type="radio" name="category" value="video" checked />
-          <span>🎥 Edit</span>
+          <span>🎥 Vídeo</span>
         </label>
         <label class="category-option">
           <input type="radio" name="category" value="clipe" />
@@ -36,6 +36,25 @@
     </form>
 
     <p id="message"></p>
+
+    <hr />
+
+    <div class="ranking-columns">
+      <div class="ranking-col">
+        <h2>🎥 Vídeos</h2>
+        <table>
+          <thead><tr><th>#</th><th>Nome</th><th>Total</th></tr></thead>
+          <tbody id="ranking-video-body"></tbody>
+        </table>
+      </div>
+      <div class="ranking-col">
+        <h2>✂️ Clipes</h2>
+        <table>
+          <thead><tr><th>#</th><th>Nome</th><th>Total</th></tr></thead>
+          <tbody id="ranking-clipe-body"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <footer class="credit">Feito por <strong>Basílio</strong></footer>
