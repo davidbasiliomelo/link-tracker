@@ -20,7 +20,11 @@
     </div>
 
     <div id="admin-panel" style="display:none;">
-      <button id="logout-btn">Sair</button>
+      <div class="admin-toolbar">
+        <button id="logout-btn">Sair</button>
+        <a id="backup-json-btn" class="backup-btn" href="/api/admin/backup?format=json">⬇️ Backup (JSON)</a>
+        <a id="backup-csv-btn" class="backup-btn" href="/api/admin/backup?format=csv">⬇️ Backup (Excel/CSV)</a>
+      </div>
 
       <div class="filters">
         <input type="text" id="search-input" placeholder="Buscar por nome..." />

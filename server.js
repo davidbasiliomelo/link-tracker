@@ -9,6 +9,7 @@ const {
   getRanking,
   getAllSubmissions,
   getStats,
+  getBackupData,
 } = require('./db');
 
 const app = express();
@@ -140,6 +141,29 @@ app.get('/api/admin/by-person', requireAdmin, (req, res) => {
       .sort((a, b) => b.items.length - a.items.length);
   });
   res.json({ ok: true, byPerson: result });
+});
+
+// Baixar backup de todos os dados
+app.get('/api/admin/backup', requireAdmin, (req, res) => {
+  const format = req.query.format === 'csv' ? 'csv' : 'json';
+  const data = getBackupData();
+  const stamp = new Date().toISOString().slice(0, 10);
+
+  if (format === 'csv') {
+    const header = 'id,url,submitter_name,category,created_at';
+    const escapeCsv = (v) => `"${String(v).replace(/"/g, '""')}"`;
+    const rows = data.map((r) =>
+      [r.id, escapeCsv(r.url), escapeCsv(r.submitter_name), r.category, r.created_at].join(',')
+    );
+    const csv = [header, ...rows].join('\n');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="backup-links-${stamp}.csv"`);
+    return res.send(csv);
+  }
+
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="backup-links-${stamp}.json"`);
+  res.send(JSON.stringify(data, null, 2));
 });
 
 // Excluir um link específico

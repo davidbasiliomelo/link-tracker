@@ -115,6 +115,17 @@ function getStats(category, period) {
   return { totalLinks, totalPeople };
 }
 
+// Exporta todos os registros, sem filtro, para backup
+function getBackupData() {
+  return db
+    .prepare(
+      `SELECT id, url, submitter_name, category, created_at
+       FROM submissions
+       ORDER BY created_at ASC`
+    )
+    .all();
+}
+
 module.exports = {
   db,
   CATEGORIES,
@@ -123,4 +134,5 @@ module.exports = {
   getRanking,
   getAllSubmissions,
   getStats,
+  getBackupData,
 };
