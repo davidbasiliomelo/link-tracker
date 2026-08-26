@@ -126,6 +126,42 @@ function getBackupData() {
     .all();
 }
 
+// Restaura registros de um backup. Ignora links que já existem (mesma URL).
+function restoreBackup(records) {
+  let inserted = 0;
+  let skipped = 0;
+  const stmt = db.prepare(
+    'INSERT INTO submissions (url, submitter_name, category, created_at) VALUES (?, ?, ?, ?)'
+  );
+
+  records.forEach((r) => {
+    if (!r || !r.url || !r.submitter_name || !CATEGORIES.includes(r.category)) {
+      skipped++;
+      return;
+    }
+    try {
+      stmt.run(
+        normalizeUrl(r.url),
+        String(r.submitter_name).trim(),
+        r.category,
+        r.created_at || new Date().toISOString()
+      );
+      inserted++;
+    } catch (err) {
+      // provavelmente já existe (URL duplicada) — pula
+      skipped++;
+    }
+  });
+
+  return { inserted, skipped };
+}
+
+// Apaga TODOS os registros (reset completo)
+function resetAll() {
+  const info = db.prepare('DELETE FROM submissions').run();
+  return { deleted: info.changes };
+}
+
 module.exports = {
   db,
   CATEGORIES,
@@ -135,4 +171,6 @@ module.exports = {
   getAllSubmissions,
   getStats,
   getBackupData,
+  restoreBackup,
+  resetAll,
 };

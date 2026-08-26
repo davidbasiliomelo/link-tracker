@@ -301,6 +301,18 @@ td a { color: var(--accent); word-break: break-all; }
   text-decoration: none;
   cursor: pointer;
 }
+#restore-message {
+  font-size: 0.85rem;
+  margin-top: 6px;
+}
+.danger-btn {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.danger-btn:hover {
+  background: var(--danger);
+  color: #fff;
+}
 .backup-btn:hover {
   border-color: var(--accent);
   color: var(--accent);

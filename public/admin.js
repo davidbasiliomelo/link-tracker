@@ -208,4 +208,77 @@ async function handleDelete(id, rowEl) {
   }
 }
 
+const restoreFileInput = document.getElementById('restore-file');
+const restoreMessage = document.getElementById('restore-message');
+
+restoreFileInput.addEventListener('change', async () => {
+  const file = restoreFileInput.files[0];
+  if (!file) return;
+
+  const confirmed = window.confirm(
+    'Isso vai adicionar os links desse arquivo de backup ao banco atual (links repetidos são ignorados automaticamente). Quer continuar?'
+  );
+  if (!confirmed) {
+    restoreFileInput.value = '';
+    return;
+  }
+
+  restoreMessage.textContent = 'Restaurando...';
+  restoreMessage.className = '';
+
+  try {
+    const text = await file.text();
+    const records = JSON.parse(text);
+
+    const res = await fetch('/api/admin/restore', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ records }),
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      restoreMessage.textContent = `✅ Restaurado! ${data.inserted} link(s) adicionados, ${data.skipped} ignorados (já existiam ou inválidos).`;
+      restoreMessage.className = 'msg-ok';
+      loadAdminData();
+    } else {
+      restoreMessage.textContent = '⚠️ ' + (data.error || 'Erro ao restaurar.');
+      restoreMessage.className = 'msg-error';
+    }
+  } catch (e) {
+    restoreMessage.textContent = '❌ Arquivo inválido. Selecione um backup .json gerado pelo próprio painel.';
+    restoreMessage.className = 'msg-error';
+  }
+
+  restoreFileInput.value = '';
+});
+
+const resetBtn = document.getElementById('reset-btn');
+
+resetBtn.addEventListener('click', async () => {
+  const firstConfirm = window.confirm(
+    '⚠️ Isso vai APAGAR TODOS os links, de todas as pessoas e categorias, para sempre. Tem certeza?'
+  );
+  if (!firstConfirm) return;
+
+  const typed = window.prompt('Pra confirmar de vez, digite ZERAR (em maiúsculas) na caixa abaixo:');
+  if (typed !== 'ZERAR') {
+    alert('Cancelado — nada foi apagado.');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/admin/reset', { method: 'DELETE' });
+    const data = await res.json();
+    if (data.ok) {
+      alert(`Pronto! ${data.deleted} link(s) apagados. O painel está zerado.`);
+      loadAdminData();
+    } else {
+      alert('Não foi possível zerar: ' + (data.error || 'erro desconhecido.'));
+    }
+  } catch (e) {
+    alert('Erro de conexão ao tentar zerar o banco.');
+  }
+});
+
 checkSession();

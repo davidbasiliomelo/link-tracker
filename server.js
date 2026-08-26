@@ -10,6 +10,8 @@ const {
   getAllSubmissions,
   getStats,
   getBackupData,
+  restoreBackup,
+  resetAll,
 } = require('./db');
 
 const app = express();
@@ -17,7 +19,7 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'troque-esta-senha';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'troque-este-segredo';
 
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(
   session({
@@ -164,6 +166,22 @@ app.get('/api/admin/backup', requireAdmin, (req, res) => {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="backup-links-${stamp}.json"`);
   res.send(JSON.stringify(data, null, 2));
+});
+
+// Restaurar um backup (JSON exportado pelo botão de backup)
+app.post('/api/admin/restore', requireAdmin, (req, res) => {
+  const { records } = req.body || {};
+  if (!Array.isArray(records)) {
+    return res.status(400).json({ ok: false, error: 'Arquivo inválido: esperado um backup em JSON.' });
+  }
+  const result = restoreBackup(records);
+  res.json({ ok: true, ...result });
+});
+
+// Zerar TODO o banco de dados (recomeçar do zero)
+app.delete('/api/admin/reset', requireAdmin, (req, res) => {
+  const result = resetAll();
+  res.json({ ok: true, ...result });
 });
 
 // Excluir um link específico
