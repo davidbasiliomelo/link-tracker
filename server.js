@@ -5,6 +5,8 @@ const path = require('path');
 const {
   CATEGORIES,
   STREAMERS,
+  getStreamersWithSettings,
+  setMode,
   findStreamer,
   insertLink,
   deleteLink,
@@ -54,7 +56,7 @@ function streamerFromQuery(req) {
 
 // Lista de streamers (para as páginas e para as abas do admin)
 app.get('/api/streamers', (req, res) => {
-  res.json({ ok: true, streamers: STREAMERS });
+  res.json({ ok: true, streamers: getStreamersWithSettings() });
 });
 
 app.post('/api/submit', (req, res) => {
@@ -74,6 +76,14 @@ app.post('/api/submit', (req, res) => {
   }
 
   const result = insertLink(url, name, category, String(streamer).toLowerCase());
+
+  if (!result.ok && result.reason === 'category_closed') {
+    const label = category === 'video' ? 'vídeos' : 'clipes';
+    return res.status(403).json({
+      ok: false,
+      error: `Este streamer não está recebendo ${label} no momento.`,
+    });
+  }
 
   if (!result.ok && result.reason === 'duplicate') {
     return res.status(409).json({
@@ -165,10 +175,22 @@ app.get('/api/admin/by-person', requireAdmin, (req, res) => {
   res.json({ ok: true, byPerson: result });
 });
 
+// Definir quais tipos de link um streamer aceita: both | video | clipe
+app.put('/api/admin/streamers/:slug/mode', requireAdmin, (req, res) => {
+  const { mode } = req.body || {};
+  const slug = String(req.params.slug || '').toLowerCase();
+  const result = setMode(slug, mode);
+  if (!result.ok) {
+    return res.status(400).json({ ok: false, error: 'Streamer ou opção inválida.' });
+  }
+  res.json({ ok: true, mode });
+});
+
 // Baixar backup de TODOS os streamers
 app.get('/api/admin/backup', requireAdmin, (req, res) => {
   const format = req.query.format === 'csv' ? 'csv' : 'json';
-  const data = getBackupData();
+  const allData = getBackupData();
+  const data = format === 'csv' ? allData.filter((r) => r.type !== 'settings') : allData;
   const stamp = new Date().toISOString().slice(0, 10);
 
   if (format === 'csv') {

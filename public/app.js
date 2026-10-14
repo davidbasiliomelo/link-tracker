@@ -8,6 +8,11 @@ const MEDALS = ['🥇', '🥈', '🥉'];
 const slug = (location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase();
 let streamer = null;
 
+const CATEGORY_NAMES = {
+  video: { singular: 'vídeo', plural: 'vídeos' },
+  clipe: { singular: 'clipe', plural: 'clipes' },
+};
+
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
@@ -32,6 +37,38 @@ function renderRanking(tbodyId, list) {
     .join('');
 }
 
+// Mostra/esconde formulário e ranking conforme o que o streamer aceita
+function applyAllowedCategories() {
+  const allowed = streamer.allowedCategories || ['video', 'clipe'];
+
+  ['video', 'clipe'].forEach((cat) => {
+    const col = document.getElementById(`ranking-col-${cat}`);
+    if (col) col.style.display = allowed.includes(cat) ? '' : 'none';
+  });
+
+  const categoryBlock = document.getElementById('category-block');
+  const urlLabel = document.getElementById('url-label');
+  const subtitle = document.getElementById('subtitle');
+
+  if (allowed.length === 1) {
+    const names = CATEGORY_NAMES[allowed[0]];
+    categoryBlock.style.display = 'none';
+    urlLabel.textContent = `Link do ${names.singular}`;
+    subtitle.textContent = `Este streamer está recebendo apenas ${names.plural}. Links repetidos não são aceitos duas vezes.`;
+  } else {
+    categoryBlock.style.display = '';
+    urlLabel.textContent = 'Link do vídeo/clipe';
+    subtitle.textContent = 'Links repetidos não são aceitos duas vezes.';
+  }
+}
+
+// Categoria escolhida: se só uma é aceita, é ela; senão, a marcada no formulário
+function selectedCategory() {
+  const allowed = streamer.allowedCategories || ['video', 'clipe'];
+  if (allowed.length === 1) return allowed[0];
+  return document.querySelector('input[name="category"]:checked').value;
+}
+
 async function loadRanking() {
   if (!streamer) return;
   try {
@@ -39,6 +76,7 @@ async function loadRanking() {
     const data = await res.json();
     renderRanking('ranking-video-body', data.ranking.video);
     renderRanking('ranking-clipe-body', data.ranking.clipe);
+    applyAllowedCategories();
   } catch (e) {
     // silencioso: ranking é só um extra visual
   }
@@ -61,6 +99,7 @@ async function init() {
 
   badgeEl.textContent = `⭐ ${streamer.name}`;
   document.title = `Envie seu link — ${streamer.name}`;
+  applyAllowedCategories();
   loadRanking();
 }
 
@@ -70,7 +109,7 @@ form.addEventListener('submit', async (e) => {
 
   const name = document.getElementById('name').value;
   const url = document.getElementById('url').value;
-  const category = document.querySelector('input[name="category"]:checked').value;
+  const category = selectedCategory();
 
   messageEl.textContent = 'Enviando...';
   messageEl.className = '';

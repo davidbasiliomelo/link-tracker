@@ -103,3 +103,13 @@ No painel `/admin.html` há abas para escolher qual streamer gerenciar.
 
 Para adicionar mais um streamer no futuro, basta incluir uma linha na lista
 `STREAMERS` no começo do arquivo `db.js` (ex: `{ slug: 'fulano', name: 'Fulano' }`).
+
+## Escolher o que o público pode enviar (por streamer)
+
+No painel `/admin.html`, dentro da aba de cada streamer, há a caixa
+"O que o público pode enviar": **Vídeos e clipes**, **Só vídeos** ou **Só clipes**.
+
+- A página do streamer mostra só o que está liberado (formulário e ranking).
+- O servidor também recusa envios de um tipo fechado, mesmo que alguém tenha a página antiga aberta.
+- Os envios que já existiam continuam salvos e visíveis no admin (a seção fica marcada como "fechada").
+- Essa configuração vai junto no backup (JSON) e volta ao restaurar.

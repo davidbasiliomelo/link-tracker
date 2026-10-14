@@ -18,6 +18,21 @@ const CATEGORY_LABELS = {
 };
 const MEDALS = ['🥇', '🥈', '🥉'];
 
+const MODE_OPTIONS = [
+  { value: 'both', label: '🎥✂️ Vídeos e clipes' },
+  { value: 'video', label: '🎥 Só vídeos' },
+  { value: 'clipe', label: '✂️ Só clipes' },
+];
+const MODE_DESCRIPTIONS = {
+  both: 'vídeos e clipes',
+  video: 'apenas vídeos',
+  clipe: 'apenas clipes',
+};
+
+const modeOptionsEl = document.getElementById('mode-options');
+const modeMessageEl = document.getElementById('mode-message');
+const modeStreamerNameEl = document.getElementById('mode-streamer-name');
+
 let streamers = [];
 let currentStreamer = null; // objeto { slug, name }
 let currentPeriod = 'all';
@@ -76,6 +91,61 @@ function renderStreamerTabs() {
 function updateStreamerUI() {
   shareLinkInput.value = `${location.origin}/${currentStreamer.slug}`;
   resetBtn.textContent = `🗑️ Zerar ${currentStreamer.name}`;
+  renderModeOptions();
+}
+
+// ---------- Tipo de envio aceito (vídeos / clipes / os dois) ----------
+function renderModeOptions() {
+  modeStreamerNameEl.textContent = currentStreamer.name;
+  modeOptionsEl.innerHTML = '';
+  modeMessageEl.textContent = '';
+
+  MODE_OPTIONS.forEach((opt) => {
+    const btn = document.createElement('button');
+    btn.className = 'mode-option' + (currentStreamer.mode === opt.value ? ' active' : '');
+    btn.textContent = opt.label;
+    btn.addEventListener('click', () => changeMode(opt.value));
+    modeOptionsEl.appendChild(btn);
+  });
+}
+
+async function changeMode(mode) {
+  if (mode === currentStreamer.mode) return;
+  const streamerAtClick = currentStreamer;
+
+  try {
+    const res = await fetch(`/api/admin/streamers/${streamerAtClick.slug}/mode`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'erro');
+
+    streamerAtClick.mode = mode;
+    streamerAtClick.allowedCategories = mode === 'both' ? ['video', 'clipe'] : [mode];
+
+    if (currentStreamer.slug === streamerAtClick.slug) {
+      renderModeOptions();
+      modeMessageEl.textContent = `✅ Salvo! Agora ${streamerAtClick.name} aceita ${MODE_DESCRIPTIONS[mode]}.`;
+      modeMessageEl.className = 'msg-ok';
+      loadAdminData();
+    }
+  } catch (e) {
+    modeMessageEl.textContent = '❌ Não foi possível salvar. Tente de novo.';
+    modeMessageEl.className = 'msg-error';
+  }
+}
+
+// Recarrega a lista de streamers (e suas configurações) do servidor
+async function refreshStreamers() {
+  const res = await fetch('/api/streamers');
+  const data = await res.json();
+  streamers = data.streamers;
+  const slug = currentStreamer ? currentStreamer.slug : null;
+  currentStreamer = streamers.find((s) => s.slug === slug) || streamers[0];
+  renderStreamerTabs();
+  updateStreamerUI();
 }
 
 copyLinkBtn.addEventListener('click', async () => {
@@ -186,7 +256,11 @@ async function loadAdminData() {
     section.className = 'category-section';
 
     section.innerHTML = `
-      <h2>${CATEGORY_LABELS[cat] || cat} — ${escapeHtml(currentStreamer.name)}</h2>
+      <h2>${CATEGORY_LABELS[cat] || cat} — ${escapeHtml(currentStreamer.name)}${
+        currentStreamer.mode !== 'both' && currentStreamer.mode !== cat
+          ? ' <span class="closed-tag">🔒 fechado para novos envios</span>'
+          : ''
+      }</h2>
       <div class="stats">
         <div class="stat-card">
           <span id="stat-links-${cat}">${stats.totalLinks}</span>
@@ -306,6 +380,7 @@ restoreFileInput.addEventListener('change', async () => {
     if (data.ok) {
       restoreMessage.textContent = `✅ Restaurado! ${data.inserted} link(s) adicionados, ${data.skipped} ignorados (já existiam ou inválidos).`;
       restoreMessage.className = 'msg-ok';
+      await refreshStreamers();
       loadAdminData();
     } else {
       restoreMessage.textContent = '⚠️ ' + (data.error || 'Erro ao restaurar.');

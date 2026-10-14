@@ -63,6 +63,45 @@ if (!tableExists) {
   }
 }
 
+// ---------- Configuração por streamer: que tipos de link o público pode enviar ----------
+// mode: 'both' (vídeos e clipes), 'video' (só vídeos) ou 'clipe' (só clipes)
+const MODES = ['both', 'video', 'clipe'];
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS streamer_settings (
+    streamer TEXT PRIMARY KEY,
+    mode TEXT NOT NULL DEFAULT 'both' CHECK (mode IN ('both', 'video', 'clipe'))
+  )
+`);
+
+function getMode(slug) {
+  const row = db.prepare('SELECT mode FROM streamer_settings WHERE streamer = ?').get(slug);
+  return row ? row.mode : 'both';
+}
+
+function setMode(slug, mode) {
+  if (!findStreamer(slug) || !MODES.includes(mode)) return { ok: false };
+  db.prepare(
+    `INSERT INTO streamer_settings (streamer, mode) VALUES (?, ?)
+     ON CONFLICT(streamer) DO UPDATE SET mode = excluded.mode`
+  ).run(slug, mode);
+  return { ok: true };
+}
+
+function allowedCategories(slug) {
+  const mode = getMode(slug);
+  return mode === 'both' ? CATEGORIES.slice() : [mode];
+}
+
+// Lista de streamers já com a configuração atual de cada um
+function getStreamersWithSettings() {
+  return STREAMERS.map((s) => ({
+    ...s,
+    mode: getMode(s.slug),
+    allowedCategories: allowedCategories(s.slug),
+  }));
+}
+
 function normalizeUrl(rawUrl) {
   let url = rawUrl.trim();
   try {
@@ -88,6 +127,9 @@ function insertLink(url, submitterName, category, streamer) {
   }
   if (!findStreamer(streamer)) {
     return { ok: false, reason: 'invalid_streamer' };
+  }
+  if (!allowedCategories(streamer).includes(category)) {
+    return { ok: false, reason: 'category_closed' };
   }
 
   const normalized = normalizeUrl(url);
@@ -163,13 +205,18 @@ function getStats(streamer, category, period) {
 
 // Exporta todos os registros de todos os streamers, para backup
 function getBackupData() {
-  return db
+  const submissions = db
     .prepare(
       `SELECT id, streamer, url, submitter_name, category, created_at
        FROM submissions
        ORDER BY streamer ASC, created_at ASC`
     )
     .all();
+  const settings = db
+    .prepare('SELECT streamer, mode FROM streamer_settings')
+    .all()
+    .map((row) => ({ type: 'settings', streamer: row.streamer, mode: row.mode }));
+  return [...submissions, ...settings];
 }
 
 // Restaura registros de um backup. Ignora links que já existem (mesmo streamer + URL).
@@ -182,6 +229,10 @@ function restoreBackup(records, defaultStreamer) {
   );
 
   records.forEach((r) => {
+    if (r && r.type === 'settings') {
+      setMode(r.streamer, r.mode); // ignora sozinho se for inválido
+      return;
+    }
     if (!r || !r.url || !r.submitter_name || !CATEGORIES.includes(r.category)) {
       skipped++;
       return;
@@ -218,7 +269,10 @@ module.exports = {
   db,
   CATEGORIES,
   STREAMERS,
+  MODES,
   findStreamer,
+  getStreamersWithSettings,
+  setMode,
   insertLink,
   deleteLink,
   getRanking,

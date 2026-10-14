@@ -12,25 +12,27 @@
   <div class="container">
     <p class="streamer-badge" id="streamer-badge"></p>
     <h1>🎬 Envie seu vídeo/clipe</h1>
-    <p class="subtitle">Links repetidos não são aceitos duas vezes.</p>
+    <p class="subtitle" id="subtitle">Links repetidos não são aceitos duas vezes.</p>
 
     <form id="submit-form">
       <label for="name">Seu nome</label>
       <input type="text" id="name" placeholder="Ex: Maria" required />
 
-      <label>Categoria</label>
-      <div class="category-toggle">
-        <label class="category-option">
-          <input type="radio" name="category" value="video" checked />
-          <span>🎥 Vídeo</span>
-        </label>
-        <label class="category-option">
-          <input type="radio" name="category" value="clipe" />
-          <span>✂️ Clipe</span>
-        </label>
+      <div id="category-block">
+        <label>Categoria</label>
+        <div class="category-toggle">
+          <label class="category-option">
+            <input type="radio" name="category" value="video" checked />
+            <span>🎥 Vídeo</span>
+          </label>
+          <label class="category-option">
+            <input type="radio" name="category" value="clipe" />
+            <span>✂️ Clipe</span>
+          </label>
+        </div>
       </div>
 
-      <label for="url">Link do vídeo/clipe</label>
+      <label for="url" id="url-label">Link do vídeo/clipe</label>
       <input type="url" id="url" placeholder="https://..." required />
 
       <button type="submit">Enviar link</button>
@@ -41,14 +43,14 @@
     <hr />
 
     <div class="ranking-columns">
-      <div class="ranking-col">
+      <div class="ranking-col" id="ranking-col-video">
         <h2>🎥 Vídeos</h2>
         <table>
           <thead><tr><th>#</th><th>Nome</th><th>Total</th></tr></thead>
           <tbody id="ranking-video-body"></tbody>
         </table>
       </div>
-      <div class="ranking-col">
+      <div class="ranking-col" id="ranking-col-clipe">
         <h2>✂️ Clipes</h2>
         <table>
           <thead><tr><th>#</th><th>Nome</th><th>Total</th></tr></thead>
