@@ -3,66 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Envie seu link</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Escolha o streamer</title>
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
   <button id="theme-toggle" class="theme-toggle" title="Alternar tema" aria-label="Alternar tema claro/escuro">🌙</button>
 
   <div class="container">
-    <h1>🎬 Envie seu vídeo/clipe</h1>
-    <p class="subtitle">Links repetidos não são aceitos duas vezes.</p>
-
-    <form id="submit-form">
-      <label for="name">Seu nome</label>
-      <input type="text" id="name" placeholder="Ex: Maria" required />
-
-      <label>Categoria</label>
-      <div class="category-toggle">
-        <label class="category-option">
-          <input type="radio" name="category" value="video" checked />
-          <span>🎥 Vídeo</span>
-        </label>
-        <label class="category-option">
-          <input type="radio" name="category" value="clipe" />
-          <span>✂️ Clipe</span>
-        </label>
-      </div>
-
-      <label for="url">Link do vídeo/clipe</label>
-      <input type="url" id="url" placeholder="https://..." required />
-
-      <button type="submit">Enviar link</button>
-    </form>
-
-    <p id="message"></p>
-
-    <hr />
-
-    <div class="ranking-columns">
-      <div class="ranking-col">
-        <h2>🎥 Vídeos</h2>
-        <table>
-          <thead><tr><th>#</th><th>Nome</th><th>Total</th></tr></thead>
-          <tbody id="ranking-video-body"></tbody>
-        </table>
-      </div>
-      <div class="ranking-col">
-        <h2>✂️ Clipes</h2>
-        <table>
-          <thead><tr><th>#</th><th>Nome</th><th>Total</th></tr></thead>
-          <tbody id="ranking-clipe-body"></tbody>
-        </table>
-      </div>
-    </div>
+    <h1>🎬 Escolha o streamer</h1>
+    <p class="subtitle">Selecione para qual streamer você quer enviar seu vídeo ou clipe.</p>
+    <div class="streamer-cards" id="streamer-cards"></div>
   </div>
 
   <footer class="credit">Feito por <strong>Basílio</strong></footer>
 
-  <canvas id="confetti-canvas"></canvas>
-
-  <script src="theme.js"></script>
-  <script src="confetti.js"></script>
-  <script src="app.js"></script>
+  <script src="/theme.js"></script>
+  <script src="/home.js"></script>
 </body>
 </html>

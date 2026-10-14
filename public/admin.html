@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Painel de Administração</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
   <button id="theme-toggle" class="theme-toggle" title="Alternar tema" aria-label="Alternar tema claro/escuro">🌙</button>
@@ -20,13 +20,21 @@
     </div>
 
     <div id="admin-panel" style="display:none;">
+      <div class="streamer-tabs" id="streamer-tabs"></div>
+
+      <div class="share-box">
+        <span class="share-label">🔗 Link para enviar às pessoas:</span>
+        <input type="text" id="share-link" readonly />
+        <button id="copy-link-btn" class="copy-btn">Copiar</button>
+      </div>
+
       <div class="admin-toolbar">
         <button id="logout-btn">Sair</button>
         <a id="backup-json-btn" class="backup-btn" href="/api/admin/backup?format=json">⬇️ Backup (JSON)</a>
         <a id="backup-csv-btn" class="backup-btn" href="/api/admin/backup?format=csv">⬇️ Backup (Excel/CSV)</a>
         <label class="backup-btn" for="restore-file">⬆️ Restaurar backup</label>
         <input type="file" id="restore-file" accept="application/json" style="display:none;" />
-        <button id="reset-btn" class="backup-btn danger-btn">🗑️ Zerar tudo</button>
+        <button id="reset-btn" class="backup-btn danger-btn">🗑️ Zerar este streamer</button>
       </div>
       <p id="restore-message"></p>
 
@@ -43,12 +51,12 @@
       <div id="categories-container"></div>
     </div>
 
-    <p class="admin-link"><a href="index.html">← Voltar para envio de links</a></p>
+    <p class="admin-link"><a href="/">← Voltar para a página inicial</a></p>
   </div>
 
   <footer class="credit">Feito por <strong>Basílio</strong></footer>
 
-  <script src="theme.js"></script>
-  <script src="admin.js"></script>
+  <script src="/theme.js"></script>
+  <script src="/admin.js"></script>
 </body>
 </html>

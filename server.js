@@ -4,6 +4,8 @@ const session = require('express-session');
 const path = require('path');
 const {
   CATEGORIES,
+  STREAMERS,
+  findStreamer,
   insertLink,
   deleteLink,
   getRanking,
@@ -11,7 +13,7 @@ const {
   getStats,
   getBackupData,
   restoreBackup,
-  resetAll,
+  resetStreamer,
 } = require('./db');
 
 const app = express();
@@ -42,11 +44,25 @@ function validPeriod(p) {
   return ['week', 'month', 'all'].includes(p) ? p : 'all';
 }
 
+// Lê ?streamer=slug da URL; se for inválido/ausente, usa o primeiro da lista
+function streamerFromQuery(req) {
+  const s = findStreamer(req.query.streamer);
+  return (s || STREAMERS[0]).slug;
+}
+
 // ---------- Rotas públicas ----------
 
-app.post('/api/submit', (req, res) => {
-  const { name, url, category } = req.body || {};
+// Lista de streamers (para as páginas e para as abas do admin)
+app.get('/api/streamers', (req, res) => {
+  res.json({ ok: true, streamers: STREAMERS });
+});
 
+app.post('/api/submit', (req, res) => {
+  const { name, url, category, streamer } = req.body || {};
+
+  if (!findStreamer(streamer)) {
+    return res.status(400).json({ ok: false, error: 'Streamer inválido.' });
+  }
   if (!name || !name.trim()) {
     return res.status(400).json({ ok: false, error: 'Informe seu nome.' });
   }
@@ -57,7 +73,7 @@ app.post('/api/submit', (req, res) => {
     return res.status(400).json({ ok: false, error: 'Escolha a categoria: Vídeo ou Clipe.' });
   }
 
-  const result = insertLink(url, name, category);
+  const result = insertLink(url, name, category, String(streamer).toLowerCase());
 
   if (!result.ok && result.reason === 'duplicate') {
     return res.status(409).json({
@@ -69,11 +85,12 @@ app.post('/api/submit', (req, res) => {
   return res.json({ ok: true });
 });
 
-// Ranking público, só com nome e contagem (sem os links), por categoria
+// Ranking público de UM streamer, só com nome e contagem (sem os links)
 app.get('/api/ranking', (req, res) => {
+  const streamer = streamerFromQuery(req);
   const ranking = {};
   CATEGORIES.forEach((cat) => {
-    ranking[cat] = getRanking(cat);
+    ranking[cat] = getRanking(streamer, cat);
   });
   res.json({ ok: true, ranking });
 });
@@ -99,14 +116,15 @@ app.get('/api/admin/check', (req, res) => {
 
 // ---------- Rotas de admin (protegidas) ----------
 
-// Estatísticas e ranking, separados por categoria. Aceita ?period=week|month|all
+// Estatísticas e ranking de um streamer, por categoria. ?streamer=&period=
 app.get('/api/admin/overview', requireAdmin, (req, res) => {
+  const streamer = streamerFromQuery(req);
   const period = validPeriod(req.query.period);
   const overview = {};
   CATEGORIES.forEach((cat) => {
     overview[cat] = {
-      stats: getStats(cat, period),
-      ranking: getRanking(cat, period),
+      stats: getStats(streamer, cat, period),
+      ranking: getRanking(streamer, cat, period),
     };
   });
   res.json({ ok: true, overview });
@@ -114,21 +132,23 @@ app.get('/api/admin/overview', requireAdmin, (req, res) => {
 
 // Versão leve, só com números, para o contador "ao vivo"
 app.get('/api/admin/stats-live', requireAdmin, (req, res) => {
+  const streamer = streamerFromQuery(req);
   const period = validPeriod(req.query.period);
   const stats = {};
   CATEGORIES.forEach((cat) => {
-    stats[cat] = getStats(cat, period);
+    stats[cat] = getStats(streamer, cat, period);
   });
   res.json({ ok: true, stats });
 });
 
-// Vídeos/clipes agrupados por pessoa. Aceita ?period e ?search
+// Vídeos/clipes agrupados por pessoa. ?streamer=&period=&search=
 app.get('/api/admin/by-person', requireAdmin, (req, res) => {
+  const streamer = streamerFromQuery(req);
   const period = validPeriod(req.query.period);
   const search = (req.query.search || '').trim();
   const result = {};
   CATEGORIES.forEach((cat) => {
-    const links = getAllSubmissions(cat, period, search);
+    const links = getAllSubmissions(streamer, cat, period, search);
     const grouped = {};
     links.forEach((link) => {
       if (!grouped[link.submitter_name]) grouped[link.submitter_name] = [];
@@ -145,17 +165,24 @@ app.get('/api/admin/by-person', requireAdmin, (req, res) => {
   res.json({ ok: true, byPerson: result });
 });
 
-// Baixar backup de todos os dados
+// Baixar backup de TODOS os streamers
 app.get('/api/admin/backup', requireAdmin, (req, res) => {
   const format = req.query.format === 'csv' ? 'csv' : 'json';
   const data = getBackupData();
   const stamp = new Date().toISOString().slice(0, 10);
 
   if (format === 'csv') {
-    const header = 'id,url,submitter_name,category,created_at';
+    const header = 'id,streamer,url,submitter_name,category,created_at';
     const escapeCsv = (v) => `"${String(v).replace(/"/g, '""')}"`;
     const rows = data.map((r) =>
-      [r.id, escapeCsv(r.url), escapeCsv(r.submitter_name), r.category, r.created_at].join(',')
+      [
+        r.id,
+        r.streamer,
+        escapeCsv(r.url),
+        escapeCsv(r.submitter_name),
+        r.category,
+        r.created_at,
+      ].join(',')
     );
     const csv = [header, ...rows].join('\n');
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -170,17 +197,19 @@ app.get('/api/admin/backup', requireAdmin, (req, res) => {
 
 // Restaurar um backup (JSON exportado pelo botão de backup)
 app.post('/api/admin/restore', requireAdmin, (req, res) => {
-  const { records } = req.body || {};
+  const { records, defaultStreamer } = req.body || {};
   if (!Array.isArray(records)) {
     return res.status(400).json({ ok: false, error: 'Arquivo inválido: esperado um backup em JSON.' });
   }
-  const result = restoreBackup(records);
+  const result = restoreBackup(records, defaultStreamer);
   res.json({ ok: true, ...result });
 });
 
-// Zerar TODO o banco de dados (recomeçar do zero)
+// Zerar os dados de UM streamer (os outros não são afetados)
 app.delete('/api/admin/reset', requireAdmin, (req, res) => {
-  const result = resetAll();
+  const streamer = findStreamer(req.query.streamer);
+  if (!streamer) return res.status(400).json({ ok: false, error: 'Streamer inválido.' });
+  const result = resetStreamer(streamer.slug);
   res.json({ ok: true, ...result });
 });
 
@@ -191,6 +220,22 @@ app.delete('/api/admin/links/:id', requireAdmin, (req, res) => {
   const result = deleteLink(id);
   if (!result.ok) return res.status(404).json({ ok: false, error: 'Link não encontrado' });
   res.json({ ok: true });
+});
+
+// ---------- Páginas de cada streamer: /brunobig, /birox ... ----------
+app.get('/:slug', (req, res, next) => {
+  if (findStreamer(req.params.slug)) {
+    return res.sendFile(path.join(__dirname, 'public', 'streamer.html'));
+  }
+  next();
+});
+
+// Qualquer outro endereço desconhecido volta pra página inicial
+app.use((req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ ok: false, error: 'Rota não encontrada' });
+  }
+  res.redirect('/');
 });
 
 app.listen(PORT, () => {

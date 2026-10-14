@@ -1,7 +1,12 @@
 const form = document.getElementById('submit-form');
 const messageEl = document.getElementById('message');
+const badgeEl = document.getElementById('streamer-badge');
 
 const MEDALS = ['🥇', '🥈', '🥉'];
+
+// O streamer vem do endereço da página: /brunobig, /birox...
+const slug = (location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase();
+let streamer = null;
 
 function escapeHtml(str) {
   const div = document.createElement('div');
@@ -28,8 +33,9 @@ function renderRanking(tbodyId, list) {
 }
 
 async function loadRanking() {
+  if (!streamer) return;
   try {
-    const res = await fetch('/api/ranking');
+    const res = await fetch(`/api/ranking?streamer=${encodeURIComponent(streamer.slug)}`);
     const data = await res.json();
     renderRanking('ranking-video-body', data.ranking.video);
     renderRanking('ranking-clipe-body', data.ranking.clipe);
@@ -38,8 +44,30 @@ async function loadRanking() {
   }
 }
 
+async function init() {
+  try {
+    const res = await fetch('/api/streamers');
+    const data = await res.json();
+    streamer = data.streamers.find((s) => s.slug === slug) || null;
+  } catch (e) {
+    streamer = null;
+  }
+
+  if (!streamer) {
+    document.querySelector('.container').innerHTML =
+      '<h1>Página não encontrada</h1><p><a href="/">← Voltar para a página inicial</a></p>';
+    return;
+  }
+
+  badgeEl.textContent = `⭐ ${streamer.name}`;
+  document.title = `Envie seu link — ${streamer.name}`;
+  loadRanking();
+}
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!streamer) return;
+
   const name = document.getElementById('name').value;
   const url = document.getElementById('url').value;
   const category = document.querySelector('input[name="category"]:checked').value;
@@ -51,7 +79,7 @@ form.addEventListener('submit', async (e) => {
     const res = await fetch('/api/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, url, category }),
+      body: JSON.stringify({ name, url, category, streamer: streamer.slug }),
     });
     const data = await res.json();
 
@@ -71,4 +99,4 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-loadRanking();
+init();

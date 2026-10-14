@@ -90,3 +90,16 @@ link-tracker/
 - Esse projeto é pensado para uso pessoal/pequenos grupos. Para uso em
   maior escala, valeria reforçar a autenticação (ex: limite de tentativas
   de senha) — posso te ajudar com isso se precisar.
+
+## Vários streamers
+
+Cada streamer tem a sua própria página, com envios e rankings separados:
+
+- `/brunobig` → Bruno Big
+- `/birox` → Birox
+- `/` → página inicial para escolher o streamer
+
+No painel `/admin.html` há abas para escolher qual streamer gerenciar.
+
+Para adicionar mais um streamer no futuro, basta incluir uma linha na lista
+`STREAMERS` no começo do arquivo `db.js` (ex: `{ slug: 'fulano', name: 'Fulano' }`).
